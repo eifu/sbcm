@@ -1,21 +1,20 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"log"
-
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
-
-	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"os/user"
 	"path/filepath"
+	"time"
 )
 
 // getClient uses a Context and Config to retrieve a Token
@@ -206,9 +205,65 @@ func main() {
 	}
 	fmt.Printf("%T, %#v\n", srv, srv)
 
+	// RFC3339 is a profile of ISO 8601 for the use in Internet protocols and
+	// standards.
 	t := time.Now().Format(time.RFC3339)
-	events, err := srv.Events.List("primary").ShowDeleted(false).
-		SingleEvents(true).TimeMin(t).MaxResults(10).OrderBy("startTime").Do()
+
+	// EventsService is a sub class of a Service class.
+	esrv := srv.Events
+
+	// Events.List() returns EventsService object on the specified calendar.
+	/*	type EventsService struct {
+			s *Service
+		}
+	*/
+	// the return type is EventsListCall
+	/*	type EventsListCall struct {
+			s            *Service
+			calendarId   string
+			urlParams_   gensupport.URLParams
+			ifNoneMatch_ string
+			ctx_         context.Context
+		}
+	*/
+	elistcall := esrv.List("primary")
+
+	// EventsListCall.ShowDeleted() sets the optional parameter "showDeleted":
+	// Whether to include deleted events (with status equals "cancelled") in
+	// the result. Cancelled instances of recurring events will still be included
+	// if singleEvents is False. The default is False. it returns
+	// EventsListCall object.
+	elistcall = elistcall.ShowDeleted(false)
+
+	// EventsListCall.SingleEvents() sets the optional parameter "singleEvents":
+	// Whether to expand recurring events into instances and only return single
+	// one-off events and instances of recurring events, but not the underlying
+	// recurring events themselves. The default is False.
+	elistcall = elistcall.SingleEvents(true)
+
+	// TimeMin sets the optional parameter "timeMin": Lower bound (inclusive)
+	// for an event's end time to filter by. The default is not to filter by
+	// end time. Must be an RFC3339 timestamp with mandatory time zone offset,
+	// e.g., 2011-06-03T10:00:00-07:00, 2011-06-03T10:00:00Z. Milliseconds may
+	// be provided but will be ignored.
+	elistcall = elistcall.TimeMin(t)
+
+	// MaxResults sets the optional parameter "maxResults": Maximum number of
+	// events returned on one result page. By default the value is 250 events.
+	// The page size can never be larger than 2500 events.
+	elistcall = elistcall.MaxResults(10)
+
+	// OrderBy sets the optional parameter "orderBy": The order of the events
+	// returned in the result. The default is an unspecified, stable order.
+	elistcall = elistcall.OrderBy("startTime")
+
+	// Do executes the "calendar.events.list" call. Exactly one of *Events or
+	// error will be non-nil. Any non-2xx status code is an error. Response
+	// headers are in either *Events.ServerResponse.Header or (if a response
+	// was returned at all) in error.(*googleapi.Error).Header. Use googleapi.
+	// IsNotModified to check whether the returned error was because
+	// http.StatusNotModified was returned.
+	events, err := elistcall.Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve next ten of the user's events. %v", err)
 	}
