@@ -14,7 +14,6 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"time"
 )
 
 // getClient uses a Context and Config to retrieve a Token
@@ -33,7 +32,6 @@ func getClient(ctx context.Context, config *oauth2.Config) *http.Client {
 		// prompts users to retrieve a token from browser.
 		// retruns a oauth2.Token object.
 		tok = getTokenFromWeb(config)
-		fmt.Printf("%T, %#v\n", tok, tok)
 
 		// save a oauth2.Token object to the file path.
 		saveToken(cacheFile, tok)
@@ -65,7 +63,6 @@ func tokenCacheFile() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Printf("%T,  %#v\n", usr, usr)
 
 	// make "$HOME/.credentials hidden directory."
 	// filepath.Join creates string name of hidden directory.
@@ -156,22 +153,20 @@ func main() {
 	// requests.
 	ctx := context.Background()
 
-	// read JSON files, and create []uint8 data.
+	// read JSON files, and create []uint8 data which  is the type expected by the io libraries
 	b, err := ioutil.ReadFile("client_secret.json")
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Printf("%T, %#v\n", b, b)
 
 	// ConfigFromJSON uses a Google Developers Console client_credentials.json
 	// file to construct a config.
 	// If modifying these scopes, delete your previously saved credentials
 	// at ~/.credentials/calendar-go-quickstart.json
-	config, err := google.ConfigFromJSON(b, calendar.CalendarReadonlyScope)
+	config, err := google.ConfigFromJSON(b, calendar.CalendarScope)
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Printf("%T, %#v\n", config, config)
 
 	// getClient returns *http.Client.
 	client := getClient(ctx, config)
@@ -180,21 +175,13 @@ func main() {
 	/*	type Service struct {
 			BasePath  string // API endpoint base URL
 			UserAgent string // optional additional User-Agent fragment
-
 			Acl *AclService
-
 			CalendarList *CalendarListService
-
 			Calendars *CalendarsService
-
 			Channels *ChannelsService
-
 			Colors *ColorsService
-
 			Events *EventsService
-
 			Freebusy *FreebusyService
-
 			Settings *SettingsService
 			// contains filtered or unexported fields
 		}
@@ -203,85 +190,30 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to retrieve calendar Client %v", err)
 	}
-	fmt.Printf("%T, %#v\n", srv, srv)
+	event := &calendar.Event{
+		Summary:     "Google I/O 2015",
+		Location:    "800 Howard St., San Francisco, CA 94103",
+		Description: "A chance to hear more about Google's developer products.",
+		Start: &calendar.EventDateTime{
+			DateTime: "2015-05-28T09:00:00-07:00",
+			TimeZone: "America/Los_Angeles",
+		},
+		End: &calendar.EventDateTime{
+			DateTime: "2015-05-28T17:00:00-07:00",
+			TimeZone: "America/Los_Angeles",
+		},
+		Recurrence: []string{"RRULE:FREQ=DAILY;COUNT=2"},
+		Attendees: []*calendar.EventAttendee{
+			&calendar.EventAttendee{Email: "lpage@example.com"},
+			&calendar.EventAttendee{Email: "sbrin@example.com"},
+		},
+	}
 
-	// RFC3339 is a profile of ISO 8601 for the use in Internet protocols and
-	// standards.
-	t := time.Now().Format(time.RFC3339)
-
-	// EventsService is a sub class of a Service class.
-	esrv := srv.Events
-
-	// Events.List() returns EventsService object on the specified calendar.
-	/*	type EventsService struct {
-			s *Service
-		}
-	*/
-	// the return type is EventsListCall
-	/*	type EventsListCall struct {
-			s            *Service
-			calendarId   string
-			urlParams_   gensupport.URLParams
-			ifNoneMatch_ string
-			ctx_         context.Context
-		}
-	*/
-	elistcall := esrv.List("primary")
-
-	// EventsListCall.ShowDeleted() sets the optional parameter "showDeleted":
-	// Whether to include deleted events (with status equals "cancelled") in
-	// the result. Cancelled instances of recurring events will still be included
-	// if singleEvents is False. The default is False. it returns
-	// EventsListCall object.
-	elistcall = elistcall.ShowDeleted(false)
-
-	// EventsListCall.SingleEvents() sets the optional parameter "singleEvents":
-	// Whether to expand recurring events into instances and only return single
-	// one-off events and instances of recurring events, but not the underlying
-	// recurring events themselves. The default is False.
-	elistcall = elistcall.SingleEvents(true)
-
-	// TimeMin sets the optional parameter "timeMin": Lower bound (inclusive)
-	// for an event's end time to filter by. The default is not to filter by
-	// end time. Must be an RFC3339 timestamp with mandatory time zone offset,
-	// e.g., 2011-06-03T10:00:00-07:00, 2011-06-03T10:00:00Z. Milliseconds may
-	// be provided but will be ignored.
-	elistcall = elistcall.TimeMin(t)
-
-	// MaxResults sets the optional parameter "maxResults": Maximum number of
-	// events returned on one result page. By default the value is 250 events.
-	// The page size can never be larger than 2500 events.
-	elistcall = elistcall.MaxResults(10)
-
-	// OrderBy sets the optional parameter "orderBy": The order of the events
-	// returned in the result. The default is an unspecified, stable order.
-	elistcall = elistcall.OrderBy("startTime")
-
-	// Do executes the "calendar.events.list" call. Exactly one of *Events or
-	// error will be non-nil. Any non-2xx status code is an error. Response
-	// headers are in either *Events.ServerResponse.Header or (if a response
-	// was returned at all) in error.(*googleapi.Error).Header. Use googleapi.
-	// IsNotModified to check whether the returned error was because
-	// http.StatusNotModified was returned.
-	events, err := elistcall.Do()
+	calendarId := "primary"
+	event, err = srv.Events.Insert(calendarId, event).Do()
 	if err != nil {
-		log.Fatalf("Unable to retrieve next ten of the user's events. %v", err)
+		fmt.Printf("%#v", srv)
+		log.Fatalf("Unable to create event. %v\n", err)
 	}
-
-	fmt.Println("Upcoming events:")
-	if len(events.Items) > 0 {
-		for _, i := range events.Items {
-			var when string
-			// If the DateTime is an empty string the Event is an all-day Event.
-			// So only Date is available.
-			if i.Start.DateTime != "" {
-				when = i.Start.DateTime
-			} else {
-				when = i.Start.Date
-			}
-			fmt.Printf("%s (%s)\n", i.Summary, when)
-		}
-	} else {
-		fmt.Printf("No upcoming events found.\n")
-	}
+	fmt.Printf("Event created: %s\n", event.HtmlLink)
 }
