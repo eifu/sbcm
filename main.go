@@ -208,11 +208,15 @@ func main() {
 	description = "TEST"
 
 	start = &calendar.EventDateTime{
-		DateTime: "2016-09-08T09:00:00-11:00:00",
+		// Formatted according to RFC3339
+		// the last time thingy is TIME OFFSET,
+		// in NY, its -04:00:00. EDT
+		DateTime: "2016-09-08T09:00:00-04:00:00",
+		// Formatted as an IANA Time Zone Database name, e.g. "Europe/Zurich"
 		TimeZone: "America/New_York",
 	}
 	end = &calendar.EventDateTime{
-		DateTime: "2016-09-08T11:00:00-12:00:00",
+		DateTime: "2016-09-08T11:00:00-04:00:00",
 		TimeZone: "America/New_York",
 	}
 
