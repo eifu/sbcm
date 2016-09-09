@@ -190,23 +190,38 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to retrieve calendar Client %v", err)
 	}
+
+	/*	Event — An event on a calendar containing information such as the title,
+		start and end times, and attendees. Events can be either single events or recurring
+		events. An event is represented by an Event resource. The Events collection for a given
+		calendar contains all event resources for that calendar.
+	*/
+
+	var summary, location, description string
+	//var recurrence []string
+	var start, end *calendar.EventDateTime
+
+	summary = "test"
+
+	location = "Stony Brook"
+
+	description = "TEST"
+
+	start = &calendar.EventDateTime{
+		DateTime: "2016-09-08T09:00:00-11:00:00",
+		TimeZone: "America/New_York",
+	}
+	end = &calendar.EventDateTime{
+		DateTime: "2016-09-08T11:00:00-12:00:00",
+		TimeZone: "America/New_York",
+	}
+
 	event := &calendar.Event{
-		Summary:     "Google I/O 2015",
-		Location:    "800 Howard St., San Francisco, CA 94103",
-		Description: "A chance to hear more about Google's developer products.",
-		Start: &calendar.EventDateTime{
-			DateTime: "2015-05-28T09:00:00-07:00",
-			TimeZone: "America/Los_Angeles",
-		},
-		End: &calendar.EventDateTime{
-			DateTime: "2015-05-28T17:00:00-07:00",
-			TimeZone: "America/Los_Angeles",
-		},
-		Recurrence: []string{"RRULE:FREQ=DAILY;COUNT=2"},
-		Attendees: []*calendar.EventAttendee{
-			&calendar.EventAttendee{Email: "lpage@example.com"},
-			&calendar.EventAttendee{Email: "sbrin@example.com"},
-		},
+		Summary:     summary,
+		Location:    location,
+		Description: description,
+		Start:       start,
+		End:         end,
 	}
 
 	calendarId := "primary"
