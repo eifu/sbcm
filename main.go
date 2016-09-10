@@ -4,11 +4,11 @@ import (
 	"./lib"
 	"fmt"
 	"golang.org/x/net/context"
-
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
 	"io/ioutil"
 	"log"
+	"time"
 )
 
 func main() {
@@ -73,16 +73,18 @@ func main() {
 
 	description = "TEST"
 
+	now := time.Now()
+
 	start = &calendar.EventDateTime{
 		// Formatted according to RFC3339
 		// the last time thingy is TIME OFFSET,
 		// in NY, its -04:00:00. EDT
-		DateTime: "2016-09-08T09:00:00-04:00:00",
+		DateTime: now.Format(time.RFC3339),
 		// Formatted as an IANA Time Zone Database name, e.g. "Europe/Zurich"
 		TimeZone: "America/New_York",
 	}
 	end = &calendar.EventDateTime{
-		DateTime: "2016-09-08T11:00:00-04:00:00",
+		DateTime: now.Add(time.Duration(30) * time.Minute).Format(time.RFC3339),
 		TimeZone: "America/New_York",
 	}
 
