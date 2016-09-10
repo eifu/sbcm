@@ -1,4 +1,4 @@
-package googleCalendar
+package lib
 
 import (
 	"encoding/json"

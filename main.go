@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./lib/googleCalendar"
+	"./lib"
 	"fmt"
 	"golang.org/x/net/context"
 
@@ -35,7 +35,7 @@ func main() {
 	}
 
 	// getClient returns *http.Client.
-	client := googleCalendar.GetGoogleClient(ctx, config)
+	client := lib.GetGoogleClient(ctx, config)
 
 	// calendar.New return a Service object.
 	/*	type Service struct {
