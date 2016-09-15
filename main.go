@@ -45,8 +45,8 @@ func loadPage(title string) (*Page, error) {
 	return &Page{Title: title,Body:  body}, nil
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
+func rootHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "view/FrontPage", http.StatusFound)
 }
 
 var templates = template.Must(template.ParseFiles("tmpl/edit.html", "tmpl/view.html"))
@@ -95,7 +95,6 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.Handl
     return func(w http.ResponseWriter, r *http.Request) {
         m := validPath.FindStringSubmatch(r.URL.Path)
         if m == nil {
-            http.NotFound(w, r)
             return
         }
         fn(w, r, m[2])
@@ -109,7 +108,7 @@ func init(){
 }
 
 func main(){
-	http.HandleFunc("/", handler)
+	http.HandleFunc("/", rootHandler)
 	http.HandleFunc("/view/", makeHandler(viewHandler))
 	http.HandleFunc("/save/", makeHandler(saveHandler))
 	http.HandleFunc("/edit/", makeHandler(editHandler))
