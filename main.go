@@ -10,6 +10,7 @@ import (
 	"log"
 	"time"
 	"net/http"
+	"os"
 	"html/template"
 	"errors"
 	"regexp"
@@ -22,7 +23,7 @@ type Page struct {
 
 func (p *Page) save() error {
 
-	filename := p.Title + ".txt"
+	filename := "data/"+p.Title + ".txt"
 	return ioutil.WriteFile(filename, p.Body, 0600)
 }
 
@@ -36,7 +37,7 @@ func getTitle(w http.ResponseWriter, r *http.Request) (string, error) {
 }
 
 func loadPage(title string) (*Page, error) {
-	filename := title + ".txt"
+	filename := "data/"+title + ".txt"
 	body, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -101,6 +102,11 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.Handl
     }
 }
 
+func init(){
+	if _, err := os.Stat("data"); os.IsNotExist(err) {
+		os.Mkdir("data", 0755)
+	}
+}
 
 func main(){
 	http.HandleFunc("/", handler)
