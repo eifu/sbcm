@@ -9,9 +9,88 @@ import (
 	"io/ioutil"
 	"log"
 	"time"
+	"net/http"
+	"html/template"
 )
 
-func main() {
+type Page struct {
+	Title string
+	Body  []byte
+}
+
+func (p *Page) save() error {
+
+	filename := p.Title + ".txt"
+	return ioutil.WriteFile(filename, p.Body, 0600)
+}
+
+func loadPage(title string) (*Page, error) {
+	filename := title + ".txt"
+	body, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	return &Page{Title: title,Body:  body}, nil
+}
+
+func handler(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
+}
+
+func viewHandler(w http.ResponseWriter, r *http.Request) {
+    title := r.URL.Path[len("/view/"):] 
+    // to drop the leading "/view/" component of the request path
+    p, _ := loadPage(title)
+    t, err := template.ParseFiles("view.html")
+    if err != nil {
+    	http.Error(w, err.Error(), http.StatusInternalServerError)
+    	return
+    }
+    err = t.Execute(w, p)
+    if err != nil{
+    	http.Error(w, err.Error(), http.StatusInternalServerError)
+    }
+}
+
+func saveHandler(w http.ResponseWriter, r *http.Request) {
+	title := r.URL.Path[len("/save/"):]
+	body := r.FormValue("body")
+	// The value returned by FormValue is of type string.
+	p := &Page{Title: title, Body: []byte(body)}
+    err := p.save()
+    if err != nil{
+    	http.Error(w, err.Error(), http.StatusInternalServerError)
+    	return 
+    }
+    http.Redirect(w, r, "/view/"+title, http.StatusFound)
+    // redirect to the view/*title*
+}
+
+func editHandler(w http.ResponseWriter, r *http.Request) {
+    title := r.URL.Path[len("/edit/"):]
+    p, err := loadPage(title)
+    if err != nil {
+        p = &Page{Title: title}
+    }
+    t, err := template.ParseFiles("edit.html")
+    if err != nil {
+    	http.Error(w, err.Error(), http.StatusInternalServerError)
+    	return
+    }
+    t.Execute(w, p)
+    if err != nil{
+    	http.Error(w, err.Error(), http.StatusInternalServerError)
+    }
+}
+
+func main(){
+	http.HandleFunc("/", handler)
+	http.HandleFunc("/view/", viewHandler)
+	http.HandleFunc("/save/", saveHandler)
+	http.HandleFunc("/edit/", editHandler)
+    http.ListenAndServe(":8080", nil)
+}
+func _main() {
 
 	// context.Background returns a non-nil, empty Context. It is never canceled,
 	// has no values, and has no deadline.  It is typically used by the main function,
